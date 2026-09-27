@@ -1,0 +1,7 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for test_role
+- name: Create a file with content
+  my_own_module:
+    path: "{{ path }}"
+    content: "{{ content }}"

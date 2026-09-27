@@ -1,0 +1,5 @@
+#SPDX-License-Identifier: MIT-0
+---
+# defaults file for test_role
+path: "/tmp/ansible_test/test.txt"
+content: "Hello from default!\n"
