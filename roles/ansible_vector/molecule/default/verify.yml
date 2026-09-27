@@ -1,0 +1,18 @@
+---
+# Purpose: assert that the instance really ended up in the expected state.
+# Molecule calls this playbook with `molecule verify`.
+- name: Verify
+  hosts: all
+  gather_facts: false # Quicker, if you do not need facts
+  tasks:
+    - name: Verify | Check Vector service is active
+      ansible.builtin.command: systemctl is-active vector
+      register: vector_service_status
+      changed_when: false
+      failed_when: vector_service_status.stdout.strip() != "active"
+
+    - name: Verify | Check Vector configuration is valid
+      ansible.builtin.command: vector validate /etc/vector/vector.yaml
+      register: vector_validate_result
+      changed_when: false
+      failed_when: vector_validate_result.rc != 0

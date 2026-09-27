@@ -1,0 +1,37 @@
+---
+- name: Vector | Get Vector distrib (RPM)
+  ansible.builtin.get_url:
+    url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm"
+    dest: "{{ ansible_facts['env']['HOME'] }}/vector-{{ vector_version }}.rpm"
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Vector | Install Vector package (RPM)
+  become: true
+  ansible.builtin.yum:
+    name: "{{ ansible_facts['env']['HOME'] }}/vector-{{ vector_version }}.rpm"
+    disable_gpg_check: true
+  when: ansible_facts['os_family'] == 'RedHat'
+  notify: Vector | Start Vector
+
+- name: Vector | Get Vector distrib (DEB)
+  ansible.builtin.get_url:
+    url: "https://github.com/vectordotdev/vector/releases/download/v{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+    dest: "{{ ansible_facts['env']['HOME'] }}/vector-{{ vector_version }}.deb"
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Vector | Install Vector package (DEB)
+  become: true
+  ansible.builtin.apt:
+    deb: "{{ ansible_facts['env']['HOME'] }}/vector-{{ vector_version }}.deb"
+  when: ansible_facts['os_family'] == 'Debian'
+  notify: Vector | Start Vector
+
+- name: Vector | Deploy Vector configuration
+  become: true
+  ansible.builtin.template:
+    src: vector.yaml.j2
+    dest: /etc/vector/vector.yaml
+    owner: vector
+    group: vector
+    mode: '0644'
+  notify: Vector | Restart Vector

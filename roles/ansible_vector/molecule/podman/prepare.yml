@@ -1,0 +1,67 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Prepare | Backup existing repo files (CentOS 8)
+      ansible.builtin.shell: |
+        if [ -f /etc/centos-release ] && grep -q "release 8" /etc/centos-release; then
+          mkdir -p /etc/yum.repos.d/backup
+          mv /etc/yum.repos.d/CentOS-*.repo /etc/yum.repos.d/backup/ 2>/dev/null || true
+        fi
+      changed_when: false
+
+    - name: Prepare | Configure Vault repositories for CentOS 8
+      ansible.builtin.shell: |
+        if grep -q "release 8" /etc/centos-release 2>/dev/null; then
+          cat > /etc/yum.repos.d/CentOS-Vault.repo <<'EOF'
+        [baseos]
+        name=CentOS-8 - BaseOS
+        baseurl=http://vault.centos.org/8.5.2111/BaseOS/$basearch/os/
+        gpgcheck=0
+        enabled=1
+
+        [appstream]
+        name=CentOS-8 - AppStream
+        baseurl=http://vault.centos.org/8.5.2111/AppStream/$basearch/os/
+        gpgcheck=0
+        enabled=1
+        EOF
+          dnf clean all
+          timeout 60 dnf makecache || true
+        fi
+      changed_when: true
+
+    - name: Prepare | Fix CentOS 7 repos to use working mirror
+      ansible.builtin.shell: |
+        if grep -q "release 7" /etc/centos-release 2>/dev/null; then
+          sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*
+          sed -i 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirror.nsc.liu.se/centos-store|g' /etc/yum.repos.d/CentOS-*
+          yum clean all
+          yum makecache
+        fi
+      changed_when: true
+
+    - name: Prepare | Refresh apt cache (Debian/Ubuntu)
+      ansible.builtin.shell: |
+        if [ -f /etc/debian_version ]; then
+          apt-get update
+        fi
+      changed_when: false
+
+    - name: Prepare | Ensure python3 is present (required by systemctl replacement)
+      ansible.builtin.raw: |
+        if command -v python3 >/dev/null 2>&1; then exit 0; fi
+        if [ -f /etc/centos-release ]; then
+          yum -y install python3 || yum -y install python
+        elif [ -f /etc/debian_version ]; then
+          apt-get update && apt-get install -y python3
+        fi
+      changed_when: false
+
+    - name: Prepare | Install docker-systemctl-replacement as /usr/bin/systemctl
+      ansible.builtin.get_url:
+        url: https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py
+        dest: /usr/bin/systemctl
+        mode: '0755'
+        force: true

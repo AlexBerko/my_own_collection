@@ -1,0 +1,26 @@
+---
+driver:
+  name: podman
+
+platforms:
+  - name: instance
+    image: docker.io/geerlingguy/docker-centos8-ansible:latest
+    pre_build_image: true
+    command: ""
+    ansible_python_interpreter: /usr/bin/python
+
+provisioner:
+  name: ansible
+
+verifier:
+  name: ansible
+
+scenario:
+  name: podman
+  test_sequence:
+    - create
+    - converge
+    - destroy
+
+
+role_name_check: 1

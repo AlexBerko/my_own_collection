@@ -1,0 +1,40 @@
+---
+- name: LightHouse | Install git
+  ansible.builtin.dnf:
+    name: git
+    state: present
+
+- name: LightHouse | Pull LightHouse repo
+  ansible.builtin.git:
+    repo: 'https://github.com/VKCOM/lighthouse.git'
+    dest: "{{ lighthouse_dir }}"
+
+- name: Ensure SELinux tools are present
+  ansible.builtin.dnf:
+    name: policycoreutils-python-utils
+    state: present
+
+- name: Set SELinux label for Lighthouse web root
+  community.general.sefcontext:
+    target: '{{ lighthouse_dir }}(/.*)?'
+    setype: httpd_sys_content_t
+    state: present
+
+- name: Apply SELinux label to existing files
+  ansible.builtin.command: restorecon -Rv {{ lighthouse_dir }}
+
+- name: Nginx | Install Nginx package
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+  notify: Nginx | Start and enable Nginx
+
+
+- name: Nginx | Deploy Nginx config
+  ansible.builtin.template:
+    src: nginx.conf.j2
+    dest: "/etc/nginx/conf.d/lighthouse.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Nginx | Restart Nginx

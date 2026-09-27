@@ -1,0 +1,12 @@
+---
+- name: Nginx | Start and enable Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Nginx | Restart Nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
+    enabled: true
